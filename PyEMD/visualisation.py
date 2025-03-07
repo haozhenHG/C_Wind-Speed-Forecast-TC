@@ -15,6 +15,7 @@ class Visualisation(object):
     """Simple visualisation helper.
 
     This class is for quick and simple result visualisation.
+    分别设置绘图的宽度和每个本征模态函数（IMF）对应的高度
     """
 
     PLOT_WIDTH = 6
@@ -27,10 +28,13 @@ class Visualisation(object):
         self.residue = None
 
         if emd_instance is not None:
-            self.imfs, self.residue = self.emd_instance.get_imfs_and_residue()
+            self.imfs, self.residue = self.emd_instance.get_imfs_and_residue() # 本征模态函数（IMFs）和分解后的残差
 
     def _check_imfs(self, imfs, residue, include_residue):
-        """Checks for passed imfs and residue."""
+        """
+        Checks for passed imfs and residue. 函数名以单个下划线开头 可能是内部使用
+        该私有方法用于检查要绘制的 IMF 和残差是否存在，如果不存在则抛出合适的属性错误
+        """
         imfs = imfs if imfs is not None else self.imfs
         residue = residue if residue is not None else self.residue
 
@@ -49,10 +53,11 @@ class Visualisation(object):
 
         The residual is an optional and can be excluded by setting `include_residue=False`.
         """
+        # 1. 先检查要绘制的 IMF 和残差是否存在，如果不存在则抛出合适的属性错误
         imfs, residue = self._check_imfs(imfs, residue, include_residue)
 
         num_rows, t_length = imfs.shape
-        num_rows += include_residue is True
+        num_rows += include_residue is True # include_residue is True 这个表达式的结果是True，等同于数值1
 
         t = t if t is not None else range(t_length)
 
@@ -96,6 +101,7 @@ class Visualisation(object):
             The `alpha` values must be in between -0.5 (fully active) and 0.5
             (no filter).
         """
+
         if alpha is not None:
             assert -0.5 < alpha < 0.5, "`alpha` must be in between -0.5 and 0.5"
 
@@ -155,6 +161,9 @@ if __name__ == "__main__":
     # Simple signal example
     t = np.arange(0, 3, 0.01)
     S = np.sin(13 * t + 0.2 * t ** 1.4) - np.cos(3 * t)
+    plt.plot(S)
+    plt.title('original series')
+
 
     emd = EMD()
     emd.emd(S)
