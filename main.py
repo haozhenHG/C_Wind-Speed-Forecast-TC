@@ -36,10 +36,12 @@ def denoise(data, imfs):
     print('denoise ',data.shape)  # denoise  (2880,)
     denoise_data = 0
     for i in range(imfs.shape[1]):  # imfs.shape (2880,15)
-        denoise_data += imfs[:,i]
+        denoise_data += imfs[:,i]  # 通过循环，将 imfs 的每一列依次累加到 denoise_data 中
+
+        # 知道累加后的相关性很强 可以代表源数据
         pearson_corr_coef = np.corrcoef(denoise_data, data)
         if pearson_corr_coef[0,1] >=0.995:
-            print(i) # 8  前9列数据
+            # print(i)
             break
 
     return denoise_data
@@ -57,14 +59,14 @@ def IMF_decomposition(data, length):
     Decomp = Decomposition(data, length)  # 初始化对象
     # emd_imfs  = Decomp.EMD()
     # eemd_imfs = Decomp.EEMD()
-    vmd_imfs  = Decomp.VMD()
+    # vmd_imfs  = Decomp.VMD()
     ssa_imfs  = Decomp.SSA()  # 调用方法奇异谱分析方法
     print(ssa_imfs.shape)  ## (2880, 15)
     # np.savetxt('ssa_imfs.csv',ssa_imfs,delimiter = ',')
 
     # emd_denoise = denoise(data, emd_imfs)
     # eemd_denoise = denoise(data, eemd_imfs)
-    vmd_denoise = denoise(data, vmd_imfs)
+    # vmd_denoise = denoise(data, vmd_imfs)
     ssa_denoise = denoise(data, ssa_imfs)
     # emd_denoise, eemd_denoise, vmd_denoise,
 
@@ -76,6 +78,7 @@ def Data_partitioning(data,test_number, input_step, pre_step):
 
     Parameters
     ----------
+    data IMFS重构后干净数据  2880,
     input_step  定义输入数据的时间步长，也就是在构建预测模型时，每个样本所包含的历史数据的长度
     Returns
     -------
@@ -147,11 +150,16 @@ def single_model(data,test_number,flag, input_step, pre_step):
 
 
 if __name__ == '__main__':
-    test_number, imfs_number, input_step, pre_step= 200, 15, 20, 2
+    test_number, imfs_number, input_step, pre_step= 200, 15, 20, 1
+    print('*'*30)
+    print('\t 读取源数据文件')
     data = pd.read_csv('10 min wind speed data.csv', header= None) # (2880,3)
+    # 选择site3站点实验
     print(data.shape,data.iloc[:,2].values.shape)
+    print('*'*30)
+    print('\t 降噪处理  选择相关性强的IMFS分量')
     ssa_denoise = IMF_decomposition(data.iloc[:,2].values, imfs_number)  # 选取第三列数据  经过降噪之后
-    np.savetxt('ssa_denoise_3.csv',ssa_denoise[-test_number:],delimiter = ',') # 使用IMFS函数重构成干净数据 ssa_denoise [2880]
+    np.savetxt('ssa_denoise_200.csv',ssa_denoise[-test_number:],delimiter = ',') # 使用IMFS函数重构成干净数据 ssa_denoise [2880]
     # pre_emd = single_model(emd_denoise, test_number, 'tcn_gru', input_step, pre_step)
     # pre_eemd = single_model(eemd_denoise, test_number, 'tcn_gru', input_step, pre_step)
     # pre_vmd = single_model(vmd_denoise, test_number, 'tcn_gru', input_step, pre_step)

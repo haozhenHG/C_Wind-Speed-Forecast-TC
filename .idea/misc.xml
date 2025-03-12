@@ -3,7 +3,7 @@
   <component name="Black">
     <option name="sdkName" value="D:\ANACONDA" />
   </component>
-  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.8 (base) (4)" project-jdk-type="Python SDK" />
+  <component name="ProjectRootManager" version="2" project-jdk-name="tensorflow (2)" project-jdk-type="Python SDK" />
   <component name="PyPackaging">
     <option name="earlyReleasesAsUpgrades" value="true" />
   </component>

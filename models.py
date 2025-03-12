@@ -37,7 +37,7 @@ class modelss:
         self.Y_tedst = Y_test
         self.scaled  = scaled_tool
         self.epochs  = 60
-        self.batch   = 28
+        self.batch   = 32
         self.units   = 20
 
     def run_tcn_gru(self):
@@ -53,7 +53,7 @@ class modelss:
         model.add(LeakyReLU(alpha=0.3)) # alpha 为 0.3 的 LeakyReLU 激活函数层
         model.add(Dense(1))  # 输出单个值的全连接层
         ###配置和训练
-        model.compile(optimizer='Adam', loss='mse', metrics='mae') # 配置模型的学习过程，使用Adam优化器和均方误差损失函数，评价指标为平均绝对误差（MAE）。
+        model.compile(optimizer='Adam', loss='mse', metrics=['mae']) # 配置模型的学习过程，使用Adam优化器和均方误差损失函数，评价指标为平均绝对误差（MAE）。
         model.summary() # 打印模型的概述，包括每层的参数数量。
         model.fit(X_train, self.Y_train, epochs=self.epochs, batch_size=self.batch)
         # X_test 的形状是 (200, 20, 1)，即 200 个样本，每个样本包含 20 个时间步长，单通道数据 。
@@ -77,7 +77,7 @@ class modelss:
         model.add(LeakyReLU(alpha=0.3))
         model.add(Dense(1))
         ###配置和训练
-        model.compile(optimizer='Adam', loss='mse', metrics='mae')
+        model.compile(optimizer='Adam', loss='mse', metrics=['mae'])
         model.summary()
         model.fit(X_train, self.Y_train, epochs=self.epochs, batch_size=self.batch)
         Y_pre = model.predict(X_test)
@@ -98,7 +98,7 @@ class modelss:
         model.add(LeakyReLU(alpha=0.3))
         model.add(Dense(1))
         ###配置和训练
-        model.compile(optimizer='Adam', loss='mse', metrics='mae')
+        model.compile(optimizer='Adam', loss='mse', metrics=['mae'])
         model.summary()
         model.fit(X_train, self.Y_train, epochs=self.epochs, batch_size=self.batch)
         Y_pre = model.predict(X_test)
@@ -122,7 +122,7 @@ class modelss:
         model.add(LeakyReLU(alpha=0.3))
         model.add(Dense(1))
         ###配置和训练
-        model.compile(optimizer='Adam', loss='mse', metrics='mae')
+        model.compile(optimizer='Adam', loss='mse', metrics=['mae'])
         model.summary()
         model.fit(X_train, self.Y_train, epochs=self.epochs, batch_size=self.batch)
         Y_pre = model.predict(X_test)
@@ -141,7 +141,7 @@ class modelss:
         model.add(GRU(units=self.units, input_shape=(X_train.shape[1],1)))
         model.add(Dense(1))
         # 配置和训练
-        model.compile(optimizer='Adam', loss='mse', metrics='mae')
+        model.compile(optimizer='Adam', loss='mse', metrics=['mae'])
         model.fit(X_train, self.Y_train, epochs=self.epochs, batch_size=self.batch)
         # model.summary()
         # model.predict()对模型进行预测
@@ -160,7 +160,7 @@ class modelss:
         model.add(LSTM(units=self.units, input_shape=(X_train.shape[1],1)))
         model.add(Dense(1))
         # 配置和训练
-        model.compile(optimizer='Adam', loss='mse', metrics='mae')
+        model.compile(optimizer='Adam', loss='mse', metrics=['mae'])
         model.fit(X_train, self.Y_train, epochs=self.epochs, batch_size=self.batch)
         # model.summary()
         # model.predict()对模型进行预测
@@ -179,7 +179,7 @@ class modelss:
         model.add(SimpleRNN(units=self.units, input_shape=(X_train.shape[1],1)))
         model.add(Dense(1))
         # 配置和训练
-        model.compile(optimizer='Adam', loss='mse', metrics='mae')
+        model.compile(optimizer='Adam', loss='mse', metrics=['mae'])
         model.fit(X_train, self.Y_train, epochs=self.epochs, batch_size=self.batch)
         # model.summary()
         # model.predict()对模型进行预测
@@ -195,7 +195,7 @@ class modelss:
         model.add(Dense(self.units, activation='relu'))
         model.add(Dense(1))
         # 配置和训练
-        model.compile(optimizer='Adam', loss='mse', metrics='mae')
+        model.compile(optimizer='Adam', loss='mse', metrics=['mae'])
         model.fit(self.X_train, self.Y_train, epochs=self.epochs, batch_size=self.batch)
         # model.summary()
         # model.predict()对模型进行预测
