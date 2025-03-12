@@ -12,6 +12,9 @@ import matplotlib.pyplot as plt
 from statsmodels.tsa.seasonal import STL
 from vmdpy import VMD
 
+#####
+
+
 def plot_plt(res):
     res.plot()
     plt.tight_layout()
