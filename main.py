@@ -26,7 +26,7 @@ def denoise(data, imfs):
     Parameters
     ----------
     data     源数据中的某一列数据
-    imfs     ssa_imfs  = Decomp.SSA()中的 ssa_imfs
+    imfs     ssa_imfs  = Decomp.SSA()中的 ssa_imfs  实际上是15列数据
 
     Returns
     -------
@@ -35,6 +35,7 @@ def denoise(data, imfs):
     data = data.reshape(-1)
     print('denoise ',data.shape)  # denoise  (2880,)
     denoise_data = 0
+    # for 函数体的功能是 将源数据列   和 经过  SSA()方法后的15列数据做皮尔逊相关性分析 选择相关性强的数据列留下来
     for i in range(imfs.shape[1]):  # imfs.shape (2880,15)
         denoise_data += imfs[:,i]
         pearson_corr_coef = np.corrcoef(denoise_data, data)
@@ -57,7 +58,10 @@ def IMF_decomposition(data, length):
     Decomp = Decomposition(data, length)  # 初始化对象
     # emd_imfs  = Decomp.EMD()
     # eemd_imfs = Decomp.EEMD()
+
+    # 实例化
     vmd_imfs  = Decomp.VMD()
+
     ssa_imfs  = Decomp.SSA()  # 调用方法奇异谱分析方法
     print(ssa_imfs.shape)  ## (2880, 15)
     # np.savetxt('ssa_imfs.csv',ssa_imfs,delimiter = ',')
@@ -72,6 +76,7 @@ def IMF_decomposition(data, length):
 
 def Data_partitioning(data,test_number, input_step, pre_step):
     '''
+
     data,test_number, input_step, pre_step = IMFS重构后干净数据   200  20  2
 
     Parameters
@@ -114,6 +119,7 @@ def Data_partitioning(data,test_number, input_step, pre_step):
 
 def single_model(data,test_number,flag, input_step, pre_step):
     '''
+    该方法根据传输进来的flag  来选择不同的方法
     test_number, imfs_number, input_step, pre_step= 200, 15, 20, 2
     Parameters
     ----------
@@ -147,10 +153,13 @@ def single_model(data,test_number,flag, input_step, pre_step):
 
 
 if __name__ == '__main__':
+    # test_number 是测试集的数据集数量
     test_number, imfs_number, input_step, pre_step= 200, 15, 20, 2
     data = pd.read_csv('10 min wind speed data.csv', header= None) # (2880,3)
     print(data.shape,data.iloc[:,2].values.shape)
-    ssa_denoise = IMF_decomposition(data.iloc[:,2].values, imfs_number)  # 选取第三列数据  经过降噪之后
+    # 选取第三列数据  经过降噪之后  即  经过SSA()方法后 与元数据列相关性最强的数据    也就是选择代表性数据
+    ssa_denoise = IMF_decomposition(data.iloc[:,2].values, imfs_number)
+    # 保存测试列数据
     np.savetxt('ssa_denoise_3.csv',ssa_denoise[-test_number:],delimiter = ',') # 使用IMFS函数重构成干净数据 ssa_denoise [2880]
     # pre_emd = single_model(emd_denoise, test_number, 'tcn_gru', input_step, pre_step)
     # pre_eemd = single_model(eemd_denoise, test_number, 'tcn_gru', input_step, pre_step)
@@ -165,11 +174,11 @@ if __name__ == '__main__':
     # pre_ssa_rnn = single_model(ssa_denoise, test_number, 'rnn', input_step, pre_step)
     # pre_ssa_bpnn = single_model(ssa_denoise, test_number, 'bpnn', input_step, pre_step)
 
-    # np.savetxt('pre_emd.csv', pre_emd, delimiter=',')
+    # np.savetxt('pre_emd.csv', pre_emd, delimiter=',')yan
     # np.savetxt('pre_eemd.csv', pre_eemd, delimiter=',')
     # np.savetxt('pre_vmd.csv', pre_vmd, delimiter=',')
 
-    np.savetxt('pre_ssa_tcn_gru.csv', pre_ssa_tcn_gru, delimiter=',')
+    np.savetxt('./zyan/pre_ssa_tcn_gru.csv', pre_ssa_tcn_gru, delimiter=',')
     # np.savetxt('pre_ssa_tcn_lstm.csv', pre_ssa_tcn_lstm, delimiter=',')
     # np.savetxt('pre_ssa_tcn_rnn.csv', pre_ssa_tcn_rnn, delimiter=',')
     # np.savetxt('pre_ssa_tcn_bpnn.csv', pre_ssa_tcn_bpnn, delimiter=',')
