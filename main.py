@@ -100,19 +100,22 @@ def Data_partitioning(data,test_number, input_step, pre_step):
         data_input[i, :] = data_scaled[i:step_size + i,0]  # 0 限定了 第一列  只有一列数据  data_scaled[0:20,0]
         data_label[i, 0] = data_scaled[step_size + i + pre_step,0] # data_scaled[20+0+2,0]
     '''
+    data_scaled = (2880,1)   data_input和data_label均是从该构建过来的
+    (2,1)  -->  [[0.]      (2,0)  --> [0. 0.]
+                 [0.]]
     for 0 in (2858):
         data_input[0,:] = data_scaled[0:20,0]   
         data_label[0,0] = data_scaled[22,0]
-    
+    ....
     for 2857 in (2858):
-        data_input[2857,:] = data_scaled[2857:2879,0]   
+        data_input[2857,:] = data_scaled[2857:2877,0]   
         data_label[2857,0] = data_scaled[2879,0]
     '''
     # data_label = data_scaled[step_size+1:,0]
-    # 划分数据集
-    X_train = data_input[:-test_number]# (2658,20)
+    # 划分数据集  再从构建好的  data_input和data_label  中划分数据集
+    X_train = data_input[:-test_number]# (2658,20)  0 --》2657
     Y_train = data_label[:-test_number]# (2685,1)
-    X_test = data_input[-test_number:]# (200,20)
+    X_test = data_input[-test_number:]# (200,20)    2658  ---》2857
     Y_test = data_label[-test_number:]# (200,1)
 
     return  X_train, X_test, Y_train, Y_test, scaled_tool
