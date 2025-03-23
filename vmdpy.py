@@ -267,4 +267,4 @@ if __name__ == '__main__':
     else:
         best_K = K_max
 
-    print(f'Best K value : {best_K}')
+    print(f'Best K value : {best_K}')  # 2
