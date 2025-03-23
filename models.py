@@ -13,7 +13,7 @@ from tensorflow.keras.models import Sequential
 from tcn.tcn import TCN
 
 class modelss:
-    def __init__(self,X_train, X_test, Y_train, Y_test, scaled_tool):
+    def __init__(self,X_train, X_test, Y_train, Y_test,  feature_scaled_tool, label_scaled_tool):
         '''
 
         Parameters
@@ -35,25 +35,29 @@ class modelss:
         self.Y_train = Y_train
         self.X_test  = X_test
         self.Y_tedst = Y_test
-        self.scaled  = scaled_tool
+        self.feature_scaled_tool  = feature_scaled_tool
+        self.label_scaled_tool  = label_scaled_tool
         self.epochs  = 60
         self.batch   = 28
         self.units   = 20
 
     def run_tcn_gru(self):
-        X_train = np.reshape(self.X_train, (self.X_train.shape[0], self.X_train.shape[1], 1))  # 2658 20 1
-        X_test  = np.reshape(self.X_test, (self.X_test.shape[0], self.X_test.shape[1], 1)) # 200 20 1
+        # 数据重塑
+        # X_train = np.reshape(self.X_train, (self.X_train.shape[0], self.X_train.shape[1], 1))  # 2658 20 1
+        # X_test  = np.reshape(self.X_test, (self.X_test.shape[0], self.X_test.shape[1], 1)) # 200 20 1
+        X_train = self.X_train
+        X_test = self.X_test
         ####搭建预测模型
         model = Sequential() #  Keras 中构建神经网络模型的一种简单方式，允许按顺序堆叠层
         model.add(Input(batch_shape=(None, X_train.shape[1], X_train.shape[2])))# (None,20,1) batch_shape 中的 None 表示批次大小可以动态调整  步长  通道数
         model.add(TCN(nb_filters=10, kernel_size=2, dilations=[1, 2, 4], return_sequences=True))
         # model.add(LSTM(units=self.units, return_sequences=True))
         model.add(GRU(units=self.units, return_sequences= False))
-        model.add(Dense(20)) # 添加有 10 个神经元的全连接层
+        model.add(Dense(10)) # 添加有 10 个神经元的全连接层
         model.add(LeakyReLU(alpha=0.3)) # alpha 为 0.3 的 LeakyReLU 激活函数层
         model.add(Dense(1))  # 输出单个值的全连接层
         ###配置和训练
-        model.compile(optimizer='Adam', loss='mse', metrics='mae') # 配置模型的学习过程，使用Adam优化器和均方误差损失函数，评价指标为平均绝对误差（MAE）。
+        model.compile(optimizer='Adam', loss='mse', metrics=['mae']) # 配置模型的学习过程，使用Adam优化器和均方误差损失函数，评价指标为平均绝对误差（MAE）。
         model.summary() # 打印模型的概述，包括每层的参数数量。
         model.fit(X_train, self.Y_train, epochs=self.epochs, batch_size=self.batch)
         # X_test 的形状是 (200, 20, 1)，即 200 个样本，每个样本包含 20 个时间步长，单通道数据 。
@@ -62,7 +66,7 @@ class modelss:
         print('model.predict(X_test)   : ==============> ',Y_pre.shape)
 
         Y_pre = Y_pre.reshape(X_test.shape[0], 1)
-        Y_pre = self.scaled.inverse_transform(Y_pre)
+        Y_pre = self.label_scaled_tool.inverse_transform(Y_pre)
         return Y_pre
 
     def run_tcn_lstm(self):
@@ -77,13 +81,13 @@ class modelss:
         model.add(LeakyReLU(alpha=0.3))
         model.add(Dense(1))
         ###配置和训练
-        model.compile(optimizer='Adam', loss='mse', metrics='mae')
+        model.compile(optimizer='Adam', loss='mse', metrics=['mae'])
         model.summary()
         model.fit(X_train, self.Y_train, epochs=self.epochs, batch_size=self.batch)
         Y_pre = model.predict(X_test)
 
         Y_pre = Y_pre.reshape(X_test.shape[0], 1)
-        Y_pre = self.scaled.inverse_transform(Y_pre)
+        Y_pre = self.label_scaled_tool.inverse_transform(Y_pre)
         return Y_pre
 
     def run_tcn_rnn(self):
@@ -98,13 +102,13 @@ class modelss:
         model.add(LeakyReLU(alpha=0.3))
         model.add(Dense(1))
         ###配置和训练
-        model.compile(optimizer='Adam', loss='mse', metrics='mae')
+        model.compile(optimizer='Adam', loss='mse', metrics=['mae'])
         model.summary()
         model.fit(X_train, self.Y_train, epochs=self.epochs, batch_size=self.batch)
         Y_pre = model.predict(X_test)
 
         Y_pre = Y_pre.reshape(X_test.shape[0], 1)
-        Y_pre = self.scaled.inverse_transform(Y_pre)
+        Y_pre = self.label_scaled_tool.inverse_transform(Y_pre)
         return Y_pre
 
     def run_tcn_bpnn(self):
@@ -122,13 +126,13 @@ class modelss:
         model.add(LeakyReLU(alpha=0.3))
         model.add(Dense(1))
         ###配置和训练
-        model.compile(optimizer='Adam', loss='mse', metrics='mae')
+        model.compile(optimizer='Adam', loss='mse', metrics=['mae'])
         model.summary()
         model.fit(X_train, self.Y_train, epochs=self.epochs, batch_size=self.batch)
         Y_pre = model.predict(X_test)
 
         Y_pre = Y_pre.reshape(X_test.shape[0], 1)
-        Y_pre = self.scaled.inverse_transform(Y_pre)
+        Y_pre = self.label_scaled_tool.inverse_transform(Y_pre)
         return Y_pre
 
 
@@ -141,14 +145,14 @@ class modelss:
         model.add(GRU(units=self.units, input_shape=(X_train.shape[1],1)))
         model.add(Dense(1))
         # 配置和训练
-        model.compile(optimizer='Adam', loss='mse', metrics='mae')
+        model.compile(optimizer='Adam', loss='mse', metrics=['mae'])
         model.fit(X_train, self.Y_train, epochs=self.epochs, batch_size=self.batch)
         # model.summary()
         # model.predict()对模型进行预测
         Y_pre = model.predict(X_test)
 
         Y_pre = Y_pre.reshape(X_test.shape[0], 1)
-        Y_pre = self.scaled.inverse_transform(Y_pre)
+        Y_pre = self.label_scaled_tool.inverse_transform(Y_pre)
         return Y_pre
 
     def run_LSTM(self):
@@ -160,14 +164,14 @@ class modelss:
         model.add(LSTM(units=self.units, input_shape=(X_train.shape[1],1)))
         model.add(Dense(1))
         # 配置和训练
-        model.compile(optimizer='Adam', loss='mse', metrics='mae')
+        model.compile(optimizer='Adam', loss='mse', metrics=['mae'])
         model.fit(X_train, self.Y_train, epochs=self.epochs, batch_size=self.batch)
         # model.summary()
         # model.predict()对模型进行预测
         Y_pre = model.predict(X_test)
 
         Y_pre = Y_pre.reshape(X_test.shape[0], 1)
-        Y_pre = self.scaled.inverse_transform(Y_pre)
+        Y_pre = self.label_scaled_tool.inverse_transform(Y_pre)
         return Y_pre
 
     def run_RNN(self):
@@ -179,14 +183,14 @@ class modelss:
         model.add(SimpleRNN(units=self.units, input_shape=(X_train.shape[1],1)))
         model.add(Dense(1))
         # 配置和训练
-        model.compile(optimizer='Adam', loss='mse', metrics='mae')
+        model.compile(optimizer='Adam', loss='mse', metrics=['mae'])
         model.fit(X_train, self.Y_train, epochs=self.epochs, batch_size=self.batch)
         # model.summary()
         # model.predict()对模型进行预测
         Y_pre = model.predict(X_test)
 
         Y_pre = Y_pre.reshape(X_test.shape[0], 1)
-        Y_pre = self.scaled.inverse_transform(Y_pre)
+        Y_pre = self.label_scaled_tool.inverse_transform(Y_pre)
         return Y_pre
     def run_BPNN(self):
         model = Sequential()
@@ -195,12 +199,12 @@ class modelss:
         model.add(Dense(self.units, activation='relu'))
         model.add(Dense(1))
         # 配置和训练
-        model.compile(optimizer='Adam', loss='mse', metrics='mae')
+        model.compile(optimizer='Adam', loss='mse', metrics=['mae'])
         model.fit(self.X_train, self.Y_train, epochs=self.epochs, batch_size=self.batch)
         # model.summary()
         # model.predict()对模型进行预测
         Y_pre = model.predict(self.X_test)
 
         Y_pre = Y_pre.reshape(self.X_test.shape[0], 1)
-        Y_pre = self.scaled.inverse_transform(Y_pre)
+        Y_pre = self.label_scaled_tool.inverse_transform(Y_pre)
         return Y_pre

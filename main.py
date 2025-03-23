@@ -3,6 +3,8 @@
 @Date    : 2022.05.29
 @Author  : Jethro
 '''
+import os
+
 import numpy as np
 import pandas as pd
 import matplotlib
@@ -32,7 +34,7 @@ def denoise(data, imfs):
     -------
 
     '''
-    data = data.reshape(-1)
+    data = data.reshape(-1) # 将多维数组展平为一维数组
     print('denoise ',data.shape)  # denoise  (2880,)
     denoise_data = 0
     for i in range(imfs.shape[1]):  # imfs.shape (2880,15)
@@ -57,20 +59,24 @@ def IMF_decomposition(data, length):
     Decomp = Decomposition(data, length)  # 初始化对象
     # emd_imfs  = Decomp.EMD()
     # eemd_imfs = Decomp.EEMD()
-    vmd_imfs  = Decomp.VMD()
+    # vmd_imfs  = Decomp.VMD()
     ssa_imfs  = Decomp.SSA()  # 调用方法奇异谱分析方法
-    print(ssa_imfs.shape)  ## (2880, 15)
-    # np.savetxt('ssa_imfs.csv',ssa_imfs,delimiter = ',')
+    print('IMF_decomposition:',ssa_imfs.shape)
+    # 目标文件路径
+    # file_path = '/De_data/ssa_imfs_6.csv'
+    # # 检查目录是否存在，如果不存在则创建
+    # os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    # np.savetxt(r'De_data/ssa_imfs_6.csv',ssa_imfs,delimiter = ',')
 
     # emd_denoise = denoise(data, emd_imfs)
     # eemd_denoise = denoise(data, eemd_imfs)
-    vmd_denoise = denoise(data, vmd_imfs)
+    # vmd_denoise = denoise(data, vmd_imfs)
     ssa_denoise = denoise(data, ssa_imfs)
     # emd_denoise, eemd_denoise, vmd_denoise,
 
     return ssa_denoise
 
-def Data_partitioning(data,test_number, input_step, pre_step):
+def Data_partitioning(data,label,test_number, input_step, pre_step):
     '''
     data,test_number, input_step, pre_step = IMFS重构后干净数据   200  20  2
 
@@ -80,20 +86,30 @@ def Data_partitioning(data,test_number, input_step, pre_step):
     Returns
     -------
     '''
-    # 导入数据
-    dataset = data.reshape(-1,1)  # 将一维的data重塑为列向量形式（2880，1）
+    # 分离特征和标签
+    features = data.values[:, :-1]  # 前 10 列作为特征
+    labels = label.reshape(-1, 1)  # 最后一列作为标签
+
     test_number = test_number # 200
-    # #归一化   dataset 中的元素被归一化到 0 到 1 之间
-    scaled_tool = MinMaxScaler(feature_range=(0, 1)) # 最大最小归一化
-    data_scaled = scaled_tool.fit_transform(dataset)  # (2880,1)
+    # 对特征和标签进行归一化
+    feature_scaled_tool = MinMaxScaler(feature_range=(0, 1)) # 元组 并非列表
+    features_scaled = feature_scaled_tool.fit_transform(features)
+
+    label_scaled_tool = MinMaxScaler(feature_range=(0, 1))
+    labels_scaled = label_scaled_tool.fit_transform(labels)
+
     # 切片
-    step_size = input_step # 20
-    data_input= np.zeros((len(data_scaled) - step_size - pre_step, step_size))  # 2858，20
-    data_label = np.zeros((len(data_scaled) - step_size - pre_step, 1)) # 2858，1
-    for i in range(len(data_scaled) - step_size-pre_step):  # range(2858)   0- 2857
-        # 2857
-        data_input[i, :] = data_scaled[i:step_size + i,0]  # 0 限定了 第一列  只有一列数据  data_scaled[0:20,0]
-        data_label[i, 0] = data_scaled[step_size + i + pre_step,0] # data_scaled[20+0+2,0]
+    step_size = input_step   # 输入步长 窗口 168
+    num_samples = features_scaled.shape[0]
+    num_features = features_scaled.shape[1]
+    data_input = np.zeros((num_samples - step_size - pre_step, step_size, num_features))
+    data_label = np.zeros((num_samples - step_size - pre_step, 1))
+
+    for i in range(num_samples - step_size - pre_step):
+        data_input[i, :, :] = features_scaled[i:i + step_size, :]
+        data_label[i, 0] = labels_scaled[step_size + i + pre_step, 0]
+
+    print(f'data_input.shape is {data_input.shape}, data_label.shape is {data_label.shape}')
     '''
     for 0 in (2858):
         data_input[0,:] = data_scaled[0:20,0]   
@@ -110,9 +126,9 @@ def Data_partitioning(data,test_number, input_step, pre_step):
     X_test = data_input[-test_number:]# (200,20)
     Y_test = data_label[-test_number:]# (200,1)
 
-    return  X_train, X_test, Y_train, Y_test, scaled_tool
+    return  X_train, X_test, Y_train, Y_test,  feature_scaled_tool, label_scaled_tool
 
-def single_model(data,test_number,flag, input_step, pre_step):
+def single_model(data,label,test_number,flag, input_step, pre_step):
     '''
     test_number, imfs_number, input_step, pre_step= 200, 15, 20, 2
     Parameters
@@ -123,40 +139,54 @@ def single_model(data,test_number,flag, input_step, pre_step):
     -------
 
     '''
-    X_train, X_test, Y_train, Y_test, scaled_tool = Data_partitioning(data, test_number, input_step, pre_step) # 切片
-    model = modelss(X_train, X_test, Y_train, Y_test, scaled_tool)
-    if flag == 'tcn_gru':
-        pre = model.run_tcn_gru()
-    if flag == 'tcn_lstm':
-        pre = model.run_tcn_lstm()
-    if flag == 'tcn_rnn':
-        pre = model.run_tcn_rnn()
-    if flag == 'tcn_bpnn':
-        pre = model.run_tcn_bpnn()
-    if flag == 'gru':
-        pre = model.run_GRU()
-    if flag == 'lstm':
-        pre = model.run_LSTM()
-    if flag == 'rnn':
-        pre = model.run_RNN()
-    if flag == 'bpnn':
-        pre = model.run_BPNN()
-    data_pre = pre[:, 0]
+    X_train, X_test, Y_train, Y_test,  feature_scaled_tool, label_scaled_tool = Data_partitioning(data,label,test_number, input_step, pre_step) # 切片
+    print('*'*30)
+    print('\tData_partitioning\t')
+    print('*' * 30)
+    print(f'X_train.shape is {X_train.shape}, X_test.shape is {X_test.shape}\nY_train.shape is {Y_train.shape}, Y_test.shape is {Y_test.shape}')
 
-    return data_pre
+    # model = modelss(X_train, X_test, Y_train, Y_test,  feature_scaled_tool, label_scaled_tool)
+    # if flag == 'tcn_gru':
+    #     pre = model.run_tcn_gru()
+    # if flag == 'tcn_lstm':
+    #     pre = model.run_tcn_lstm()
+    # if flag == 'tcn_rnn':
+    #     pre = model.run_tcn_rnn()
+    # if flag == 'tcn_bpnn':
+    #     pre = model.run_tcn_bpnn()
+    # if flag == 'gru':
+    #     pre = model.run_GRU()
+    # if flag == 'lstm':
+    #     pre = model.run_LSTM()
+    # if flag == 'rnn':
+    #     pre = model.run_RNN()
+    # if flag == 'bpnn':
+    #     pre = model.run_BPNN()
+    # data_pre = pre[:, 0]
+    #
+    # return data_pre
 
 
 if __name__ == '__main__':
-    test_number, imfs_number, input_step, pre_step= 200, 15, 20, 2
-    data = pd.read_csv('10 min wind speed data.csv', header= None) # (2880,3)
-    print(data.shape,data.iloc[:,2].values.shape)
-    ssa_denoise = IMF_decomposition(data.iloc[:,2].values, imfs_number)  # 选取第三列数据  经过降噪之后
-    np.savetxt('ssa_denoise_3.csv',ssa_denoise[-test_number:],delimiter = ',') # 使用IMFS函数重构成干净数据 ssa_denoise [2880]
+    # test_number 测试集  input_step 输入步长 24*7
+    test_number, imfs_number, input_step, pre_step= 720, 6, 168, 1  # input_step的大小对IMF_S的 mape没有影响
+
+    # data = pd.read_csv('10 min wind speed data.csv', header= None) # (2880,3)
+    # print(data.shape,data.iloc[:,2].values.shape)
+    # ssa_denoise = IMF_decomposition(data.iloc[:,2].values, imfs_number)  # 选取第三列数据  经过降噪之后
+    # np.savetxt('ssa_denoise_3.csv',ssa_denoise[-test_number:],delimiter = ',') # 使用IMFS函数重构成干净数据 ssa_denoise [2880]
+
+    data = pd.read_csv('jupyter/American_final_to_model.csv', index_col=0)  # (21769, 11)
+    print('输入模型数据大小：',data.shape)
+    # print(data.iloc[:, -1].values) # 查看负荷列数据
+    ssa_denoise_load = IMF_decomposition(data.iloc[:, -1].values, imfs_number)  # 选取负荷列数据  经过降噪之后
+    # np.savetxt(r'De_data/ssa_denoise_load_720.csv', ssa_denoise_load[-test_number:], delimiter=',')
+
     # pre_emd = single_model(emd_denoise, test_number, 'tcn_gru', input_step, pre_step)
     # pre_eemd = single_model(eemd_denoise, test_number, 'tcn_gru', input_step, pre_step)
     # pre_vmd = single_model(vmd_denoise, test_number, 'tcn_gru', input_step, pre_step)
 
-    pre_ssa_tcn_gru = single_model(ssa_denoise, test_number, 'tcn_gru', input_step, pre_step)
+    pre_ssa_tcn_gru = single_model(data,ssa_denoise_load, test_number, 'tcn_gru', input_step, pre_step)
     # pre_ssa_tcn_lstm = single_model(ssa_denoise, test_number, 'tcn_lstm', input_step, pre_step)
     # pre_ssa_tcn_rnn = single_model(ssa_denoise, test_number, 'tcn_rnn', input_step, pre_step)
     # pre_ssa_tcn_bpnn = single_model(ssa_denoise, test_number, 'tcn_bpnn', input_step, pre_step)
@@ -177,9 +207,9 @@ if __name__ == '__main__':
     # np.savetxt('pre_ssa_lstm.csv', pre_ssa_lstm, delimiter=',')
     # np.savetxt('pre_ssa_rnn.csv', pre_ssa_rnn, delimiter=',')
     # np.savetxt('pre_ssa_bpnn.csv', pre_ssa_bpnn, delimiter=',')
-    Actual = ssa_denoise[-test_number:]    # ssa 后的 后两百条数据
+    # Actual = ssa_denoise_load[-test_number:]    # ssa 后的 后两百条数据
 
-    print('实验一：不同分解方法对预测结果影响')
+    # print('实验一：不同分解方法对预测结果影响')
     '''
     数值都是越小越好
     MAE 是预测值与真实值之差的绝对值的平均值 
@@ -199,9 +229,9 @@ if __name__ == '__main__':
     # print('VMD分解方法： R2 : ', mape(Actual, pre_vmd))
     # print('VMD分解方法： RMSE : ', np.sqrt(mse(Actual, pre_vmd)))
     # print('#########################')
-    print('SSA分解方法： MAE : ', mae(Actual, pre_ssa_tcn_gru))
-    print('SSA分解方法： MAPE : ', mape(Actual, pre_ssa_tcn_gru))
-    print('SSA分解方法： RMSE : ', np.sqrt(mse(Actual, pre_ssa_tcn_gru)))
+    # print('SSA分解方法： MAE : ', mae(Actual, pre_ssa_tcn_gru))
+    # print('SSA分解方法： MAPE : ', mape(Actual, pre_ssa_tcn_gru))
+    # print('SSA分解方法： RMSE : ', np.sqrt(mse(Actual, pre_ssa_tcn_gru)))
 
     # print('实验二：采用不同时间信息提取模型对实验结果影响')
     # print('#########################')
