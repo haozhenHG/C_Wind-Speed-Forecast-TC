@@ -1,20 +1,8 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-# @Time : 2025/3/12 22:12
-# @File ：STL_VMD.py
-# @Author : 胜天半子
-# IDE : PyCharm
-# @CSDN : https://blog.csdn.net/HG0724?type=blog
-# @GitHub : https://github.com/haozhenHG
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from statsmodels.tsa.seasonal import STL
 from vmdpy import VMD
-
-#####
-
-#####
 
 def plot_plt(res):
     res.plot()
