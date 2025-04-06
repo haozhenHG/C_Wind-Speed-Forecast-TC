@@ -4,6 +4,7 @@
 @Author  : Jethro
 '''
 import os
+import time
 
 import numpy as np
 import pandas as pd
@@ -76,57 +77,100 @@ def IMF_decomposition(data, length):
 
     return ssa_denoise
 
-def Data_partitioning(data,label,test_number, input_step, pre_step):
-    '''
-    data,test_number, input_step, pre_step = IMFS重构后干净数据   200  20  2
+# def Data_partitioning(data,label,test_number, input_step, pre_step):
+#     '''
+#     data,test_number, input_step, pre_step = IMFS重构后干净数据   200  20  2
+#
+#     Parameters
+#     ----------
+#     input_step  定义输入数据的时间步长，也就是在构建预测模型时，每个样本所包含的历史数据的长度
+#     Returns
+#     -------
+#     '''
+#     # 分离特征和标签
+#     features = data.values[:, :-1]  # 前 10 列作为特征
+#     labels = label.reshape(-1, 1)  # 最后一列作为标签
+#
+#     test_number = test_number # 200
+#     # 对特征和标签进行归一化
+#     feature_scaled_tool = MinMaxScaler(feature_range=(0, 1)) # 元组 并非列表
+#     features_scaled = feature_scaled_tool.fit_transform(features)
+#
+#     label_scaled_tool = MinMaxScaler(feature_range=(0, 1))
+#     labels_scaled = label_scaled_tool.fit_transform(labels)
+#
+#     # 切片
+#     step_size = input_step   # 输入步长 窗口 168
+#     num_samples = features_scaled.shape[0]
+#     num_features = features_scaled.shape[1]
+#     data_input = np.zeros((num_samples - step_size - pre_step, step_size, num_features))
+#     data_label = np.zeros((num_samples - step_size - pre_step, 1))
+#
+#     for i in range(num_samples - step_size - pre_step):
+#         data_input[i, :, :] = features_scaled[i:i + step_size, :]
+#         data_label[i, 0] = labels_scaled[step_size + i + pre_step, 0]
+#
+#     print(f'data_input.shape is {data_input.shape}, data_label.shape is {data_label.shape}')
+#     '''
+#     for 0 in (2858):
+#         data_input[0,:] = data_scaled[0:20,0]
+#         data_label[0,0] = data_scaled[22,0]
+#
+#     for 2857 in (2858):
+#         data_input[2857,:] = data_scaled[2857:2879,0]
+#         data_label[2857,0] = data_scaled[2879,0]
+#     '''
+#     # data_label = data_scaled[step_size+1:,0]
+#     # 划分数据集
+#     X_train = data_input[:-test_number]# (2658,20)
+#     Y_train = data_label[:-test_number]# (2685,1)
+#     X_test = data_input[-test_number:]# (200,20)
+#     Y_test = data_label[-test_number:]# (200,1)
+#
+#     return  X_train, X_test, Y_train, Y_test,  feature_scaled_tool, label_scaled_tool
+def Data_partitioning(data, label, test_number, input_step, pre_step):
+    # 检查数据和标签长度是否一致
+    if len(data) != len(label):
+        raise ValueError("数据和标签的长度必须一致。")
 
-    Parameters
-    ----------
-    input_step  定义输入数据的时间步长，也就是在构建预测模型时，每个样本所包含的历史数据的长度
-    Returns
-    -------
-    '''
-    # 分离特征和标签
-    features = data.values[:, :-1]  # 前 10 列作为特征
-    labels = label.reshape(-1, 1)  # 最后一列作为标签
+    # 按时间顺序划分训练集和测试集
+    split_idx = len(data) - test_number
+    train_data = data[:split_idx]
+    train_label = label[:split_idx]
+    test_data = data[split_idx - input_step - pre_step:]
+    test_label = label[split_idx - input_step - pre_step:]
 
-    test_number = test_number # 200
-    # 对特征和标签进行归一化
-    feature_scaled_tool = MinMaxScaler(feature_range=(0, 1)) # 元组 并非列表
-    features_scaled = feature_scaled_tool.fit_transform(features)
+    # 合并训练集的特征和标签后归一化
+    combined_train = np.concatenate([train_data, train_label.reshape(-1, 1)], axis=1)
+    scaler = MinMaxScaler(feature_range=(0, 1))
+    combined_train_scaled = scaler.fit_transform(combined_train)
 
-    label_scaled_tool = MinMaxScaler(feature_range=(0, 1))
-    labels_scaled = label_scaled_tool.fit_transform(labels)
+    # 合并测试集的特征和标签后进行归一化（使用训练集的缩放器）
+    combined_test = np.concatenate([test_data, test_label.reshape(-1, 1)], axis=1)
+    combined_test_scaled = scaler.transform(combined_test)
 
-    # 切片
-    step_size = input_step   # 输入步长 窗口 168
-    num_samples = features_scaled.shape[0]
-    num_features = features_scaled.shape[1]
-    data_input = np.zeros((num_samples - step_size - pre_step, step_size, num_features))
-    data_label = np.zeros((num_samples - step_size - pre_step, 1))
+    # 重新分离训练集的特征和标签
+    train_features_scaled = combined_train_scaled[:, :-1]
+    train_labels_scaled = combined_train_scaled[:, -1].reshape(-1, 1)
 
-    for i in range(num_samples - step_size - pre_step):
-        data_input[i, :, :] = features_scaled[i:i + step_size, :]
-        data_label[i, 0] = labels_scaled[step_size + i + pre_step, 0]
+    # 重新分离测试集的特征和标签
+    test_features_scaled = combined_test_scaled[:, :-1]
+    test_labels_scaled = combined_test_scaled[:, -1].reshape(-1, 1)
 
-    print(f'data_input.shape is {data_input.shape}, data_label.shape is {data_label.shape}')
-    '''
-    for 0 in (2858):
-        data_input[0,:] = data_scaled[0:20,0]   
-        data_label[0,0] = data_scaled[22,0]
-    
-    for 2857 in (2858):
-        data_input[2857,:] = data_scaled[2857:2879,0]   
-        data_label[2857,0] = data_scaled[2879,0]
-    '''
-    # data_label = data_scaled[step_size+1:,0]
-    # 划分数据集
-    X_train = data_input[:-test_number]# (2658,20)
-    Y_train = data_label[:-test_number]# (2685,1)
-    X_test = data_input[-test_number:]# (200,20)
-    Y_test = data_label[-test_number:]# (200,1)
+    # 为训练集生成时间窗口
+    def create_dataset(features, labels, input_step, pre_step):
+        num_samples = features.shape[0]
+        data_input = []
+        data_label = []
+        for i in range(num_samples - input_step - pre_step):
+            data_input.append(features[i:i + input_step, :])
+            data_label.append(labels[i + input_step + pre_step, 0])
+        return np.array(data_input), np.array(data_label).reshape(-1, 1)
 
-    return  X_train, X_test, Y_train, Y_test,  feature_scaled_tool, label_scaled_tool
+    X_train, Y_train = create_dataset(train_features_scaled, train_labels_scaled, input_step, pre_step)
+    X_test, Y_test = create_dataset(test_features_scaled, test_labels_scaled, input_step, pre_step)
+
+    return X_train, X_test, Y_train, Y_test, scaler
 
 def single_model(data,label,test_number,flag, input_step, pre_step):
     '''
@@ -139,33 +183,34 @@ def single_model(data,label,test_number,flag, input_step, pre_step):
     -------
 
     '''
-    X_train, X_test, Y_train, Y_test,  feature_scaled_tool, label_scaled_tool = Data_partitioning(data,label,test_number, input_step, pre_step) # 切片
+    X_train, X_test, Y_train, Y_test, scaler = Data_partitioning(data,label,test_number, input_step, pre_step) # 切片
     print('*'*30)
     print('\tData_partitioning\t')
     print('*' * 30)
     print(f'X_train.shape is {X_train.shape}, X_test.shape is {X_test.shape}\nY_train.shape is {Y_train.shape}, Y_test.shape is {Y_test.shape}')
 
-    # model = modelss(X_train, X_test, Y_train, Y_test,  feature_scaled_tool, label_scaled_tool)
-    # if flag == 'tcn_gru':
-    #     pre = model.run_tcn_gru()
-    # if flag == 'tcn_lstm':
-    #     pre = model.run_tcn_lstm()
-    # if flag == 'tcn_rnn':
-    #     pre = model.run_tcn_rnn()
-    # if flag == 'tcn_bpnn':
-    #     pre = model.run_tcn_bpnn()
-    # if flag == 'gru':
-    #     pre = model.run_GRU()
-    # if flag == 'lstm':
-    #     pre = model.run_LSTM()
-    # if flag == 'rnn':
-    #     pre = model.run_RNN()
-    # if flag == 'bpnn':
-    #     pre = model.run_BPNN()
+    model = modelss(X_train, X_test, Y_train, Y_test,  scaler)
+    if flag == 'tcn_gru':
+        pre = model.run_tcn_gru()
+    if flag == 'tcn_lstm':
+        pre = model.run_tcn_lstm()
+    if flag == 'tcn_rnn':
+        pre = model.run_tcn_rnn()
+    if flag == 'tcn_bpnn':
+        pre = model.run_tcn_bpnn()
+    if flag == 'gru':
+        pre = model.run_GRU()
+    if flag == 'lstm':
+        pre = model.run_LSTM()
+    if flag == 'rnn':
+        pre = model.run_RNN()
+    if flag == 'bpnn':
+        pre = model.run_BPNN()
     # data_pre = pre[:, 0]
-    #
+
     # return data_pre
 
+    return pre
 
 if __name__ == '__main__':
     # test_number 测试集  input_step 输入步长 24*7
@@ -180,7 +225,7 @@ if __name__ == '__main__':
     print('输入模型数据大小：',data.shape)
     # print(data.iloc[:, -1].values) # 查看负荷列数据
     ssa_denoise_load = IMF_decomposition(data.iloc[:, -1].values, imfs_number)  # 选取负荷列数据  经过降噪之后
-    # np.savetxt(r'De_data/ssa_denoise_load_720.csv', ssa_denoise_load[-test_number:], delimiter=',')
+    np.savetxt(r'De_data/ssa_denoise_load_720.csv', ssa_denoise_load[-test_number:], delimiter=',')
 
     # pre_emd = single_model(emd_denoise, test_number, 'tcn_gru', input_step, pre_step)
     # pre_eemd = single_model(eemd_denoise, test_number, 'tcn_gru', input_step, pre_step)
@@ -199,7 +244,7 @@ if __name__ == '__main__':
     # np.savetxt('pre_eemd.csv', pre_eemd, delimiter=',')
     # np.savetxt('pre_vmd.csv', pre_vmd, delimiter=',')
 
-    np.savetxt('pre_ssa_tcn_gru.csv', pre_ssa_tcn_gru, delimiter=',')
+    np.savetxt('De_data/pre_ssa_tcn_gru.csv', pre_ssa_tcn_gru, delimiter=',')
     # np.savetxt('pre_ssa_tcn_lstm.csv', pre_ssa_tcn_lstm, delimiter=',')
     # np.savetxt('pre_ssa_tcn_rnn.csv', pre_ssa_tcn_rnn, delimiter=',')
     # np.savetxt('pre_ssa_tcn_bpnn.csv', pre_ssa_tcn_bpnn, delimiter=',')
@@ -207,9 +252,9 @@ if __name__ == '__main__':
     # np.savetxt('pre_ssa_lstm.csv', pre_ssa_lstm, delimiter=',')
     # np.savetxt('pre_ssa_rnn.csv', pre_ssa_rnn, delimiter=',')
     # np.savetxt('pre_ssa_bpnn.csv', pre_ssa_bpnn, delimiter=',')
-    # Actual = ssa_denoise_load[-test_number:]    # ssa 后的 后两百条数据
+    Actual = ssa_denoise_load[-test_number:]    # ssa 后的 后两百条数据
 
-    # print('实验一：不同分解方法对预测结果影响')
+    print('实验一：不同分解方法对预测结果影响')
     '''
     数值都是越小越好
     MAE 是预测值与真实值之差的绝对值的平均值 
@@ -229,9 +274,12 @@ if __name__ == '__main__':
     # print('VMD分解方法： R2 : ', mape(Actual, pre_vmd))
     # print('VMD分解方法： RMSE : ', np.sqrt(mse(Actual, pre_vmd)))
     # print('#########################')
-    # print('SSA分解方法： MAE : ', mae(Actual, pre_ssa_tcn_gru))
-    # print('SSA分解方法： MAPE : ', mape(Actual, pre_ssa_tcn_gru))
-    # print('SSA分解方法： RMSE : ', np.sqrt(mse(Actual, pre_ssa_tcn_gru)))
+    print('SSA分解方法： MAE : ', mae(Actual, pre_ssa_tcn_gru))
+    print('SSA分解方法： MAPE : ', mape(Actual, pre_ssa_tcn_gru))
+    print('SSA分解方法： RMSE : ', np.sqrt(mse(Actual, pre_ssa_tcn_gru)))
+
+    time.sleep(5)  # 等待程序结束
+    os.system("rundll32.exe powrprof.dll,SetSuspendState 0,1,0")  # 关闭显示器（需管理员权限）
 
     # print('实验二：采用不同时间信息提取模型对实验结果影响')
     # print('#########################')
