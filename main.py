@@ -40,6 +40,8 @@ def denoise(data, imfs):
     denoise_data = 0
     for i in range(imfs.shape[1]):  # imfs.shape (2880,15)
         denoise_data += imfs[:,i]
+        print(f"denoise_data shape: {denoise_data.shape}")
+        print(f"data shape: {data.shape}")
         pearson_corr_coef = np.corrcoef(denoise_data, data)
         if pearson_corr_coef[0,1] >=0.995:
             print(i) # 8  前9列数据
@@ -49,18 +51,13 @@ def denoise(data, imfs):
 
 def IMF_decomposition(data, length):
     '''
-
-    Parameters
-    ----------
     data  : 源数据中的某一列数据     代码中选择的是第三列数据
     length ： 同imfs_number 数值 15
-    Returns
-    -------
     '''
     Decomp = Decomposition(data, length)  # 初始化对象
-    # emd_imfs  = Decomp.EMD()
-    # eemd_imfs = Decomp.EEMD()
-    # vmd_imfs  = Decomp.VMD()
+    emd_imfs  = Decomp.EMD()
+    eemd_imfs = Decomp.EEMD()
+    vmd_imfs  = Decomp.VMD()
     ssa_imfs  = Decomp.SSA()  # 调用方法奇异谱分析方法
     print('IMF_decomposition:',ssa_imfs.shape)
     # 目标文件路径
@@ -69,13 +66,13 @@ def IMF_decomposition(data, length):
     # os.makedirs(os.path.dirname(file_path), exist_ok=True)
     # np.savetxt(r'De_data/ssa_imfs_6.csv',ssa_imfs,delimiter = ',')
 
-    # emd_denoise = denoise(data, emd_imfs)
-    # eemd_denoise = denoise(data, eemd_imfs)
-    # vmd_denoise = denoise(data, vmd_imfs)
+    emd_denoise = denoise(data, emd_imfs)
+    eemd_denoise = denoise(data, eemd_imfs)
+    vmd_denoise = denoise(data, vmd_imfs)
     ssa_denoise = denoise(data, ssa_imfs)
     # emd_denoise, eemd_denoise, vmd_denoise,
 
-    return ssa_denoise
+    return emd_denoise, eemd_denoise, vmd_denoise,ssa_denoise
 
 # def Data_partitioning(data,label,test_number, input_step, pre_step):
 #     '''
@@ -221,7 +218,7 @@ if __name__ == '__main__':
     # ssa_denoise = IMF_decomposition(data.iloc[:,2].values, imfs_number)  # 选取第三列数据  经过降噪之后
     # np.savetxt('ssa_denoise_3.csv',ssa_denoise[-test_number:],delimiter = ',') # 使用IMFS函数重构成干净数据 ssa_denoise [2880]
 
-    data = pd.read_csv('jupyter/American_final_to_model.csv', index_col=0)  # (21769, 11)
+    data = pd.read_csv('jupyter/American_1year_to_model.csv', index_col=0)  # (21769, 11)
     print('输入模型数据大小：',data.shape)
     # print(data.iloc[:, -1].values) # 查看负荷列数据
     ssa_denoise_load = IMF_decomposition(data.iloc[:, -1].values, imfs_number)  # 选取负荷列数据  经过降噪之后
@@ -275,7 +272,7 @@ if __name__ == '__main__':
     # print('VMD分解方法： RMSE : ', np.sqrt(mse(Actual, pre_vmd)))
     # print('#########################')
     print('SSA分解方法： MAE : ', mae(Actual, pre_ssa_tcn_gru))
-    print('SSA分解方法： MAPE : ', mape(Actual, pre_ssa_tcn_gru))
+    print('SSA分解方法： MAPE : ', mape(Actual, pre_ssa_tcn_gru))  # 用的自己的方法  其他两个用的自带的
     print('SSA分解方法： RMSE : ', np.sqrt(mse(Actual, pre_ssa_tcn_gru)))
 
     time.sleep(5)  # 等待程序结束

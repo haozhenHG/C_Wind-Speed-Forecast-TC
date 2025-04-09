@@ -1,7 +1,6 @@
 # coding=UTF-8
 import numpy as np
 from keras.callbacks import EarlyStopping
-from tensorflow.compiler.mlir import tensorflow
 
 # from tensorflow import keras
 # from tensorflow.keras.layers import LSTM, GRU, SimpleRNN, Dense, Input, LeakyReLU
@@ -39,7 +38,7 @@ class modelss:
         self.X_test  = X_test
         self.Y_tedst = Y_test
         self.scaler  = scaler
-        self.epochs  = 128
+        self.epochs  = 100
         self.batch   = 128
         self.units   = 20
 

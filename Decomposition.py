@@ -84,6 +84,6 @@ class Decomposition:
     def VMD(self):
         data = self.data
         alpha, tau, length, DC, init, tol = 5000, 0, self.length, 0, 1, 1e-8
-        u, u_hat, omega = VMD(data, alpha, tau, length, DC, init, tol)
+        u, u_hat, omega = VMD(data, alpha, tau, length, DC, init, tol) # 得到分解模式的集合u、模式的光谱范围u_hat和估计模态的中心频率omega
 
         return u.T

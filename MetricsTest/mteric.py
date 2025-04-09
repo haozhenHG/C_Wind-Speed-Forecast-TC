@@ -9,6 +9,7 @@
 import numpy as np
 import pandas as pd
 # 1. 生成两个文件
+from sklearn.metrics import mean_absolute_error, mean_absolute_percentage_error, mean_squared_error
 
 
 # 生成从 1 到 100 的数组，步长为 1
@@ -43,3 +44,11 @@ MAPE: 4.229674260242041
 RMSE: 1.0
 
 '''
+
+mae_before = mean_absolute_error(y_true, y_pred)
+mape_before = mean_absolute_percentage_error(y_true, y_pred)
+rmse_before = np.sqrt(mean_squared_error(y_true, y_pred))
+
+print(f"归一化前的MAE: {mae_before:.2f}")
+print(f"归一化前的MAPE: {mape_before:.2f}%")
+print(f"归一化前的RMSE: {rmse_before:.2f}")
